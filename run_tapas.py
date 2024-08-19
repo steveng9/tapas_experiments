@@ -118,7 +118,7 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
     if sys.argv[3] != ".":
         sdgs = [sys.argv[3]]
 
-    subexps = {"A": f"e{eps}/", "B": f"n{n}/", "C": ""}
+    subexps = {"A": f"e{eps}/", "B": f"n{n}/", "C": "", "D": f"e{eps}/"}
     single_label_matrix = load_artifact(shadowset_directory + f"exp{task}/{subexps[task]}label_matrix_singleMI")
     # set_label_matrix = load_artifact(... # todo
 
