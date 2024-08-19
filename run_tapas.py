@@ -66,6 +66,14 @@ expC = SimpleNamespace(
     exclude={},
 )
 
+expD = SimpleNamespace(
+    s=500,
+    r=30,
+    n=1000,
+    t=32,
+    exclude={},
+)
+
 
 
 
@@ -89,6 +97,14 @@ def main():
 
     elif task == "C":
         tapas_attack(task, expC.eps, expC.n, expC.s, expC.r, list(expC.exclude.keys()))
+
+    if task == "D":
+        epsilons = EPSILONS
+        if sys.argv[2] != ".":
+            epsilons = [float(sys.argv[2])]
+        for eps in epsilons:
+            tapas_attack(task, '{0:.2f}'.format(eps), expD.n, expD.s, expD.r, [sdg for sdg in SDGs if eps in expD.exclude.get(sdg, [])])
+
 
     else:
         assert False, f"Invalid parameter: {task}"
