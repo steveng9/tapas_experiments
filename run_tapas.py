@@ -25,9 +25,9 @@ import tqdm
 
 
 # DIR = "/Users/golobs/Documents/GradSchool/"
-DIR = "/home/azureuser/"
+DIR = "/home/golobs/"
 # shadowset_directory = DIR + "shadowsets/"
-shadowset_directory = "/datadrive/shadowsets/"
+shadowset_directory = "/home/golobs/shadowsets/"
 
 meta_filepath = DIR + "SNAKE/meta.json"
 aux_filepath = DIR + "SNAKE/base.parquet"
