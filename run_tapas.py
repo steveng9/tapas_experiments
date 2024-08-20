@@ -27,7 +27,8 @@ import tqdm
 # DIR = "/Users/golobs/Documents/GradSchool/"
 DIR = "/home/golobs/"
 # shadowset_directory = DIR + "shadowsets/"
-shadowset_directory = "/home/golobs/shadowsets/"
+# shadowset_directory = "/home/golobs/shadowsets/"
+shadowset_directory = "/home/golobs/shadowsets_cali/"
 
 meta_filepath = DIR + "SNAKE/meta.json"
 aux_filepath = DIR + "SNAKE/base.parquet"
@@ -136,7 +137,7 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
         auc, aucs, runtime = tapas_attack_with_shadowsets_and_targets(tapas_data, tapas_targets, shadowset_directory_, n, s, r)
         print("\tauc: ", auc)
 
-        with open(shadowset_directory + f"exp{task}/{sdg}_e{eps}_n{n}_results.txt", 'w') as f:
+        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_results.txt", 'w') as f:
             f.write(f"AUC: {auc}\n")
             f.write(f"runtime: {runtime}\n\n")
             f.write(f"all AUCs\n")
@@ -146,6 +147,9 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
 
 
 def tapas_attack_with_shadowsets_and_targets(data, targets, shadowset_directory_, n, s, r):
+
+    order = sys.argv[4] if sys.argv[4] != "." else 3
+    num_ways = sys.argv[5] if sys.argv[5] != "." else 455
 
     start = time.process_time()
     data_knowledge = tapas.threat_models.AuxiliaryDataKnowledge(
@@ -170,7 +174,7 @@ def tapas_attack_with_shadowsets_and_targets(data, targets, shadowset_directory_
         iterator_tracker=tqdm.tqdm
     )
 
-    attacker = tapas.attacks.GroundhogRQAttack(targets=targets, use_pregenerated=shadowset_directory_, schema=data.description)
+    attacker = tapas.attacks.GroundhogRQAttack(targets=targets, use_pregenerated=shadowset_directory_, schema=data.description, order=order, num_ways=num_ways)
 
     # print("Training the attack...")
     attacker.train(threat_model, num_samples=s)
