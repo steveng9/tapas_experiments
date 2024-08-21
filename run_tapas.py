@@ -231,10 +231,10 @@ def fit_continuous_features_equaldepth(aux_data, name, eps):
     for col in aux_data.columns:
         vals = sorted(aux_data[col].values)
         thresholds[col] = [vals[i] for i in range(0, aux_data.shape[0], n_per_basket)]
-    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{fo(eps)}_{N_BINS}")
+    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{eps}_{N_BINS}")
 
 def discretize_continuous_features_equaldepth(data, name, eps):
-    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{fo(eps)}_{N_BINS}")
+    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{eps}_{N_BINS}")
     data_copy = pd.DataFrame()
     for col in data.columns:
         data_copy[col] = np.digitize(data[col].values, thresholds[col])
