@@ -14,6 +14,9 @@ import tapas.attacks
 import tapas.report
 from tapas.datasets.dataset import _parse_csv, validate_header, TabularDataset
 import tqdm
+import math
+from sklearn.datasets import fetch_california_housing
+from sklearn.preprocessing import StandardScaler
 
 
 
@@ -33,6 +36,7 @@ shadowset_directory = "/home/golobs/shadowsets_cali/"
 meta_filepath = DIR + "SNAKE/meta.json"
 aux_filepath = DIR + "SNAKE/base.parquet"
 
+N_BINS = 20
 # n_sizes = {100: 10, 316: 18, 1_000: 32, 3_162: 56, 10_000: 100, 31_623: 178}
 N_SIZES = [100, 316, 1_000, 3_162, 10_000, 31_623]
 # n_sizes = [100, 316]
@@ -137,7 +141,8 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
         auc, aucs, runtime = tapas_attack_with_shadowsets_and_targets(tapas_data, tapas_targets, shadowset_directory_, n, s, r)
         print("\tauc: ", auc)
 
-        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_results.txt", 'w') as f:
+        order = int(sys.argv[4]) if sys.argv[4] != "." else 3
+        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_o{order}_results.txt", 'w') as f:
             f.write(f"AUC: {auc}\n")
             f.write(f"runtime: {runtime}\n\n")
             f.write(f"all AUCs\n")
@@ -148,8 +153,8 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
 
 def tapas_attack_with_shadowsets_and_targets(data, targets, shadowset_directory_, n, s, r):
 
-    order = sys.argv[4] if sys.argv[4] != "." else 3
-    num_ways = sys.argv[5] if sys.argv[5] != "." else 455
+    order = int(sys.argv[4]) if sys.argv[4] != "." else 3
+    num_ways = int(sys.argv[5]) if sys.argv[5] != "." else 455
 
     start = time.process_time()
     data_knowledge = tapas.threat_models.AuxiliaryDataKnowledge(
@@ -191,20 +196,49 @@ def tapas_attack_with_shadowsets_and_targets(data, targets, shadowset_directory_
 
 
 
-def load_data():
-    print("Loading dataset...")
-    with open(meta_filepath) as f:
-        schema = json.load(f)
-    aux = pd.read_parquet(aux_filepath)
+def load_data(data):
+    if data == "snake":
+        print("Loading dataset...")
+        with open(meta_filepath) as f:
+            schema = json.load(f)
+        aux = pd.read_parquet(aux_filepath)
 
-    aux['HHID'] = aux.index
-    aux.index = range(aux.shape[0])
-    columns = aux[np.take(aux.columns, range(15))].columns.tolist()
-    # numeric_columns = ['age', 'ownchild', 'hoursut']
-    # catg_columns = [col for col in columns if col not in numeric_columns]
+        aux['HHID'] = aux.index
+        aux.index = range(aux.shape[0])
+        columns = aux[np.take(aux.columns, range(15))].columns.tolist()
+        # numeric_columns = ['age', 'ownchild', 'hoursut']
+        # catg_columns = [col for col in columns if col not in numeric_columns]
 
-    description = DataDescription(schema, label="snake")
-    return TabularDataset(aux[columns], description), aux, description, columns
+        description = DataDescription(schema, label="snake")
+        return TabularDataset(aux[columns], description), aux, description, columns
+    else:
+        print("Loading california dataset...")
+        columns = [str(x) for x in range(9)]
+        # schema = [{"name": col, "representation": list(range(C.n_bins))} for col in columns] # TODO is this range correct?
+        aux_original = pd.DataFrame(StandardScaler().fit_transform(fetch_california_housing(as_frame=True).frame.sample(frac=1)), columns=columns)
+
+        fit_continuous_features_equaldepth(aux_original, "cali")
+        aux = discretize_continuous_features_equaldepth(aux_original, "cali")
+        aux["HHID"] = np.hstack([[i]*5 for i in range(math.ceil(aux.shape[0] / 5))])[:aux.shape[0]]
+        schema = [{'name': str(col), 'type': 'finite/ordered', 'representation': range(N_BINS)} for col in columns]
+        description = DataDescription(schema, label="cali")
+        return TabularDataset(aux[columns], description), aux, description, columns
+
+
+def fit_continuous_features_equaldepth(aux_data, name):
+    n_per_basket = aux_data.shape[0] // N_BINS
+    thresholds = {}
+    for col in aux_data.columns:
+        vals = sorted(aux_data[col].values)
+        thresholds[col] = [vals[i] for i in range(0, aux_data.shape[0], n_per_basket)]
+    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{N_BINS}")
+
+def discretize_continuous_features_equaldepth(data, name):
+    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{N_BINS}")
+    data_copy = pd.DataFrame()
+    for col in data.columns:
+        data_copy[col] = np.digitize(data[col].values, thresholds[col])
+    return data_copy
 
 
 def custom_metric(summary):
