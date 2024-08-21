@@ -118,7 +118,7 @@ def main():
 
 def tapas_attack(task, eps, n, s, r, sdgs_excluded):
 
-    tapas_data, aux, description, columns = load_data()
+    tapas_data, aux, description, columns = load_data("cali")
     sdgs = SDGs
     if sys.argv[3] != ".":
         sdgs = [sys.argv[3]]
@@ -225,16 +225,16 @@ def load_data(data):
         return TabularDataset(aux[columns], description), aux, description, columns
 
 
-def fit_continuous_features_equaldepth(aux_data, name):
+def fit_continuous_features_equaldepth(aux_data, name, sdg, eps):
     n_per_basket = aux_data.shape[0] // N_BINS
     thresholds = {}
     for col in aux_data.columns:
         vals = sorted(aux_data[col].values)
         thresholds[col] = [vals[i] for i in range(0, aux_data.shape[0], n_per_basket)]
-    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{N_BINS}")
+    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{sdg}_{fo(eps)}_{N_BINS}")
 
-def discretize_continuous_features_equaldepth(data, name):
-    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{N_BINS}")
+def discretize_continuous_features_equaldepth(data, name, sdg, eps):
+    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{sdg}_{fo(eps)}_{N_BINS}")
     data_copy = pd.DataFrame()
     for col in data.columns:
         data_copy[col] = np.digitize(data[col].values, thresholds[col])
@@ -269,6 +269,11 @@ def load_artifact(name):
         return artifact
     except:
         return None
+
+
+
+def fo(eps):
+    return '{0:.2f}'.format(eps)
 
 
 main()
