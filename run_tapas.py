@@ -142,7 +142,7 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
         print("\tauc: ", auc)
 
         order = int(sys.argv[4]) if sys.argv[4] != "." else 3
-        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_o{order}_results.txt", 'w') as f:
+        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_cali_results.txt", 'w') as f:
             f.write(f"AUC: {auc}\n")
             f.write(f"runtime: {runtime}\n\n")
             f.write(f"all AUCs\n")
