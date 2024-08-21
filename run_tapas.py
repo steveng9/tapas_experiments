@@ -118,7 +118,7 @@ def main():
 
 def tapas_attack(task, eps, n, s, r, sdgs_excluded):
 
-    tapas_data, aux, description, columns = load_data("cali")
+    tapas_data, aux, description, columns = load_data("cali", eps)
     sdgs = SDGs
     if sys.argv[3] != ".":
         sdgs = [sys.argv[3]]
@@ -196,7 +196,7 @@ def tapas_attack_with_shadowsets_and_targets(data, targets, shadowset_directory_
 
 
 
-def load_data(data):
+def load_data(data, eps):
     if data == "snake":
         print("Loading dataset...")
         with open(meta_filepath) as f:
@@ -217,24 +217,24 @@ def load_data(data):
         # schema = [{"name": col, "representation": list(range(C.n_bins))} for col in columns] # TODO is this range correct?
         aux_original = pd.DataFrame(StandardScaler().fit_transform(fetch_california_housing(as_frame=True).frame.sample(frac=1)), columns=columns)
 
-        fit_continuous_features_equaldepth(aux_original, "cali")
-        aux = discretize_continuous_features_equaldepth(aux_original, "cali")
+        fit_continuous_features_equaldepth(aux_original, "cali", eps)
+        aux = discretize_continuous_features_equaldepth(aux_original, "cali", eps)
         aux["HHID"] = np.hstack([[i]*5 for i in range(math.ceil(aux.shape[0] / 5))])[:aux.shape[0]]
         schema = [{'name': str(col), 'type': 'finite/ordered', 'representation': range(N_BINS)} for col in columns]
         description = DataDescription(schema, label="cali")
         return TabularDataset(aux[columns], description), aux, description, columns
 
 
-def fit_continuous_features_equaldepth(aux_data, name, sdg, eps):
+def fit_continuous_features_equaldepth(aux_data, name, eps):
     n_per_basket = aux_data.shape[0] // N_BINS
     thresholds = {}
     for col in aux_data.columns:
         vals = sorted(aux_data[col].values)
         thresholds[col] = [vals[i] for i in range(0, aux_data.shape[0], n_per_basket)]
-    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{sdg}_{fo(eps)}_{N_BINS}")
+    dump_artifact(thresholds, shadowset_directory + f"{name}_thresholds_for_continuous_features_{fo(eps)}_{N_BINS}")
 
-def discretize_continuous_features_equaldepth(data, name, sdg, eps):
-    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{sdg}_{fo(eps)}_{N_BINS}")
+def discretize_continuous_features_equaldepth(data, name, eps):
+    thresholds = load_artifact(shadowset_directory + f"{name}_thresholds_for_continuous_features_{fo(eps)}_{N_BINS}")
     data_copy = pd.DataFrame()
     for col in data.columns:
         data_copy[col] = np.digitize(data[col].values, thresholds[col])
