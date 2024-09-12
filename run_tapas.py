@@ -142,7 +142,7 @@ def tapas_attack(task, eps, n, s, r, sdgs_excluded):
         print("\tauc: ", auc)
 
         order = int(sys.argv[4]) if sys.argv[4] != "." else 3
-        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_cali_o{order}_results.txt", 'w') as f:
+        with open(shadowset_directory + f"exp{task}/tapas_{task}_{sdg}_e{eps}_n{n}_cali_o{order}_b5_results.txt", 'w') as f:
             f.write(f"AUC: {auc}\n")
             f.write(f"runtime: {runtime}\n\n")
             f.write(f"all AUCs\n")
@@ -219,6 +219,10 @@ def load_data(data, eps):
 
         fit_continuous_features_equaldepth(aux_original, "cali", eps)
         aux = discretize_continuous_features_equaldepth(aux_original, "cali", eps)
+
+        # TEMPORARY: reduce to 5 bins from 20 for cali data
+        aux[columns] = aux[columns].applymap(lambda x: (x-1) // 4)
+
         aux["HHID"] = np.hstack([[i]*5 for i in range(math.ceil(aux.shape[0] / 5))])[:aux.shape[0]]
         schema = [{'name': str(col), 'type': 'finite/ordered', 'representation': range(N_BINS)} for col in columns]
         description = DataDescription(schema, label="cali")
